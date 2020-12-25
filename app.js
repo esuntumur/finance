@@ -12,6 +12,13 @@ var uiController = (function () {
     expenseLabel: ".budget__expenses--value",
     percentageLabel: ".budget__expenses--percentage",
     containerDiv: ".container",
+    expensePercentageLabel: ".item__percentage",
+  };
+
+  var NodeListForeach = function (list, callback) {
+    for (var i = 0; i < list.length; i++) {
+      callback(list[i], i);
+    }
   };
   return {
     getInput: function () {
@@ -20,6 +27,17 @@ var uiController = (function () {
         description: document.querySelector(DOMstrings.inputDescription).value,
         value: parseInt(document.querySelector(DOMstrings.inputValue).value),
       };
+    },
+    displayPercentages: function (allPercentages) {
+      // давхардсан классуудыг nodeList болгож авлаа.
+      var elements = document.querySelectorAll(
+        DOMstrings.expensePercentageLabel
+      );
+      // var arr = Array.from(elements);
+      // Элемент болгоны хувьд зарлагийн хувийг массиваас авч шивж оруулах
+      NodeListForeach(elements, function (el, index) {
+        el.textContent = allPercentages[index] + "%";
+      });
     },
     getDOMstrings: function () {
       return DOMstrings;
@@ -95,7 +113,19 @@ var financeController = (function () {
     this.id = id;
     this.description = description;
     this.value = value;
+    this.percentage = -1;
   };
+
+  Expense.prototype.calcPercentage = function (totalIncome) {
+    if (totalIncome > 0)
+      this.percentage = Math.round((this.value / totalIncome) * 100);
+    else this.percentage = 0;
+  };
+
+  Expense.prototype.getPercentage = function () {
+    return this.percentage;
+  };
+
   var calculateTotal = function (type) {
     var sum = 0;
     data.items[type].forEach((element) => {
@@ -130,15 +160,31 @@ var financeController = (function () {
       data.tusuv = data.totals.inc - data.totals.exp;
 
       // Зарлагийн эзлэх хувь
-      data.huvi = Math.round((data.totals.exp * 100) / data.totals.inc);
+      if (data.totals.inc === 0) data.huvi = 0;
+      else data.huvi = Math.round((data.totals.exp * 100) / data.totals.inc);
     },
+
+    calculatePercentages: function () {
+      data.items.exp.forEach((e) => {
+        e.calcPercentage(data.totals.inc);
+      });
+    },
+    getPercentages: function () {
+      var allPercentages = data.items.exp.map(function (el) {
+        return el.getPercentage();
+      });
+      return allPercentages;
+    },
+
     tusviigAvah: function () {
       return {
         tusuv: data.tusuv,
         huvi: data.huvi,
+
         totalInc: data.totals.inc,
         totalEpx: data.totals.exp,
       };
+      console.log(data.huvi);
     },
     deleteItem: function (type, id) {
       var ids = data.items[type].map(function (el) {
@@ -188,15 +234,28 @@ var appController = (function (uiController, financeController) {
       uiController.addListItem(item, input.type);
       uiController.clearFIeld();
 
-      // 4. төсвийг тооцоолно.
-      financeController.tusuvTootsooloh();
-
-      // 5. эцсийн үлдэгдэл, тооцоог дэлгэцэнд гаргана.
-      var tusuv = financeController.tusviigAvah();
-
-      // 6. Төсвийн тооцоог дэлгэцэнд гаргана
-      uiController.tusviigUzuuleh(tusuv);
+      // Төсвийг тооцоолж дэлгэцэнд үзүүлнэ.
+      updateTusuv();
     }
+  };
+  var updateTusuv = function () {
+    // 4. төсвийг тооцоолно.
+    financeController.tusuvTootsooloh();
+
+    // 5. эцсийн үлдэгдэл, тооцоог дэлгэцэнд гаргана.
+    var tusuv = financeController.tusviigAvah();
+
+    // 6. Төсвийн тооцоог дэлгэцэнд гаргана
+    uiController.tusviigUzuuleh(tusuv);
+
+    // 7. Элементүүдийн хувийг тооцоолно.
+    financeController.calculatePercentages();
+
+    // 8. Элементүүдийн хувийг хүлээж авна.
+    var allPercentages = financeController.getPercentages();
+
+    // 9. Эдгээр хувийг дэлгэцэнд хүлээж авна.
+    uiController.displayPercentages(allPercentages);
   };
   var setupEventListeners = function () {
     var DOM = uiController.getDOMstrings();
@@ -224,7 +283,8 @@ var appController = (function (uiController, financeController) {
           financeController.deleteItem(type, itemId);
           // 2. Дэлгэцнээс тухайн элементийг устгана.
           uiController.deleteListItem(id);
-          // 3. Үлдэгдэл тооцоог шинэчилж харуулна.
+          // 3. Төсвийг тооцоолж дэлгэцэнд үзүүлнэ.
+          updateTusuv();
         }
       });
   };
