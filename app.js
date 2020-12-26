@@ -13,6 +13,7 @@ var uiController = (function () {
     percentageLabel: ".budget__expenses--percentage",
     containerDiv: ".container",
     expensePercentageLabel: ".item__percentage",
+    dateLabel: ".budget__title--month",
   };
 
   var NodeListForeach = function (list, callback) {
@@ -20,7 +21,34 @@ var uiController = (function () {
       callback(list[i], i);
     }
   };
+
+  var formatMoney = function (num, type) {
+    var x = num + "";
+
+    x = x.split("").reverse();
+    var y = "";
+
+    for (let i = 0, j = 1; i < x.length; i++, j++) {
+      y = y + x[i];
+      if (j % 3 === 0) {
+        y = y + ",";
+      }
+    }
+    y = y.split("").reverse().join("");
+    if (y.split("")[0] === ",") y = y.substr(1, y.length - 1);
+
+    return y;
+  };
+
   return {
+    displayDate: function () {
+      var today = new Date();
+      document.querySelector(DOMstrings.dateLabel).textContent =
+        today.getFullYear() +
+        " оны " +
+        (today.getMonth() + 1) +
+        " сарын өрхийн санхүү";
+    },
     getInput: function () {
       return {
         type: document.querySelector(DOMstrings.inputType).value,
@@ -60,7 +88,13 @@ var uiController = (function () {
       // });
     },
     tusviigUzuuleh: function (tusuv) {
-      document.querySelector(DOMstrings.tusuvLabel).textContent = tusuv.tusuv;
+      var type;
+      if (tusuv.tusuv > 0) type = "inc";
+      else type = "exp";
+      document.querySelector(DOMstrings.tusuvLabel).textContent = formatMoney(
+        tusuv.tusuv,
+        type
+      );
       document.querySelector(DOMstrings.incomeLabel).textContent =
         tusuv.totalInc;
       document.querySelector(DOMstrings.expenseLabel).textContent =
@@ -85,15 +119,15 @@ var uiController = (function () {
       if (type === "inc") {
         list = DOMstrings.incomeList;
         html =
-          '<?xml version="1.0"?><div class="item clearfix" id="inc-%id%"><div class="item__description">$$DESCRIPTION$$</div><div class="right clearfix"><div class="item__value">+ %%VALUE%%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"/></button></div></div></div>';
+          '<?xml version="1.0"?><div class="item clearfix" id="inc-%id%"><div class="item__description">$$DESCRIPTION$$</div><div class="right clearfix"><div class="item__value"> %%VALUE%%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"/></button></div></div></div>';
       } else {
         list = DOMstrings.expenseList;
         html =
-          '<?xml version="1.0"?><div class="item clearfix" id="exp-%id%"><div class="item__description">$$DESCRIPTION$$</div><div class="right clearfix"><div class="item__value">- %%VALUE%%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"/></button></div></div></div>';
+          '<?xml version="1.0"?><div class="item clearfix" id="exp-%id%"><div class="item__description">$$DESCRIPTION$$</div><div class="right clearfix"><div class="item__value"> %%VALUE%%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"/></button></div></div></div>';
       }
       html = html.replace("%id%", item.id);
       html = html.replace("$$DESCRIPTION$$", item.description);
-      html = html.replace("%%VALUE%%", item.value);
+      html = html.replace("%%VALUE%%", formatMoney(item.value, type));
       document.querySelector(list).insertAdjacentHTML("beforeend", html);
 
       // Тэр HTML дотроо орлого зарлагын утгуудыг REPLACE ашиглаж өөрчилж өгнө.
@@ -292,6 +326,7 @@ var appController = (function (uiController, financeController) {
   return {
     init: function () {
       console.log("Application started...");
+      uiController.displayDate();
       uiController.tusviigUzuuleh({
         tusuv: 0,
         huvi: 0,
