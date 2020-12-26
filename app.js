@@ -49,6 +49,23 @@ var uiController = (function () {
         (today.getMonth() + 1) +
         " сарын өрхийн санхүү";
     },
+    changeType: function () {
+      var fields = document.querySelectorAll(
+        DOMstrings.inputType +
+          ", " +
+          DOMstrings.inputDescription +
+          ", " +
+          DOMstrings.inputValue
+      );
+
+      NodeListForeach(fields, function (el) {
+        el.classList.toggle("red-focus");
+      });
+      var button = document
+        .querySelector(DOMstrings.addBtn)
+        .classList.toggle("red");
+      location = "mnstudent.com";
+    },
     getInput: function () {
       return {
         type: document.querySelector(DOMstrings.inputType).value,
@@ -302,6 +319,10 @@ var appController = (function (uiController, financeController) {
         ctrlAddItem();
       }
     });
+
+    document
+      .querySelector(DOM.inputType)
+      .addEventListener("change", uiController.changeType);
 
     document
       .querySelector(DOM.containerDiv)
