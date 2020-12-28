@@ -64,7 +64,6 @@ var uiController = (function () {
       var button = document
         .querySelector(DOMstrings.addBtn)
         .classList.toggle("red");
-      location = "mnstudent.com";
     },
     getInput: function () {
       return {
